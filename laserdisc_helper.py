@@ -4,7 +4,7 @@ from requests.utils import quote
 import httplib2
 import os
 import operator
-
+import time
 from apiclient import discovery
 from oauth2client import client
 from oauth2client import tools
@@ -66,36 +66,41 @@ def main():
     print('No data found.')
   else:
     f = open('movies.csv', 'wr+')
-    for m in values:
+    for m in values[1:]:
+      time.sleep(0.5)
       r = requests.get(omdbURL % quote(m[0]))
       if r.status_code == 200:
         if r.json()['Response'] == "True":
-          ratings = []
-          if r.json()['imdbRating'] != 'N/A':
-            ratings.append(int(float(r.json()['imdbRating']) * 10))
-          if r.json()['tomatoRating'] != 'N/A':
-            ratings.append(int(float(r.json()['tomatoRating']) * 10))
-          if r.json()['tomatoUserMeter'] != 'N/A':
-            ratings.append(int(r.json()['tomatoUserMeter']))
-          if r.json()['tomatoMeter'] != 'N/A':
-            ratings.append(int(r.json()['tomatoMeter']))
-          if r.json()['Metascore'] != 'N/A':
-            ratings.append(int(r.json()['Metascore']))
-          if len(ratings) > 0:
-            aggregate = str(sum(ratings) / len(ratings))
-          else:
-            aggregate = "N/A"
           m[0] = r.json()['Title']
           m.append(r.json()['Year'][:4])
-          m.append(aggregate)
-          print('{:<70}[{}]{:>30}'.format(r.json()['Title'], r.json()['Year'][:4], aggregate))
+          if r.json()['imdbRating'] != 'N/A':
+            m.append(float(r.json()['imdbRating']))
+          else:
+            m.append("N/A")
+          if r.json()['tomatoRating'] != 'N/A':
+            m.append(float(r.json()['tomatoRating']))
+          else:
+            m.append("N/A")
+          if r.json()['tomatoUserMeter'] != 'N/A':
+            m.append(int(r.json()['tomatoUserMeter']))
+          else:
+            m.append("N/A")
+          if r.json()['tomatoMeter'] != 'N/A':
+            m.append(int(r.json()['tomatoMeter']))
+          else:
+            m.append("N/A")
+          if r.json()['Metascore'] != 'N/A':
+            m.append(int(r.json()['Metascore']))
+          else:
+            m.append("N/A")
+          print('{:<70}[{}]'.format(r.json()['Title'], r.json()['Year'][:4]))
         else:
           missing += 1
     f.close()
     body = {'values': values}
     result = service.spreadsheets().values().update(
       spreadsheetId=spreadsheetId,
-      range="Sheet1!A:C",
+      range="Sheet1!A:G",
       valueInputOption="RAW",
       body=body,
     ).execute()
